@@ -22,9 +22,9 @@ from main.utils.base import group_to_sheet, group_to_mice, book, group_to_contro
 warnings.filterwarnings("ignore")
 
 path_to_files = [
-    r"/Users/tush/Library/CloudStorage/GoogleDrive-tushar.mohan2001@gmail.com/Other computers/My Laptop/Group_6_3_19_2024",
-    r"/Users/tush/Grad School/CMRG Lab/Group_6",
-    r"/Users/tush/Grad School/CMRG Lab/Group6_7"
+    r"/home/ubuntu/Group_6_3_19_2024",
+    r"/home/ubuntu/Group_6",
+    r"/home/ubuntu/Group6_7"
     # r"/Users/tush/Library/CloudStorage/GoogleDrive-tushar.mohan2001@gmail.com/Other computers/My Laptop (1)/Group_6",
     # r"/Users/tush/Library/CloudStorage/GoogleDrive-tushar.mohan2001@gmail.com/Other computers/My Laptop (1)/Group6_7"
 ]
