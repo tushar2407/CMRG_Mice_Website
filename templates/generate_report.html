@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="container">
+        <h1>Choose the group for which you want to get reports:</h1>
+        <form class="row g-3" method="post">
+            {% csrf_token %}
+            <div class="col-md-3">
+                <label for="group" class="form-label">Group</label>
+                <select class="form-select" id="group" name="group" required>
+                    <option selected disabled value="">Choose</option>
+                    {% for g in groups %}
+                        <option value="{{ g }}">{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12">
+                <button class="btn btn-primary" type="submit">Submit</button>
+            </div>
+        </form>
+        {% if report %}
+            <div class="col-12 mt-5">
+                <a class="btn btn-success" href="{{report}}" target="_blank">Download</a>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

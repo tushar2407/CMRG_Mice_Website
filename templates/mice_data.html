@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% load filters %}
+{% block content %}
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .add-row-button {
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        $(document).ready(function(){
+            $('input').focus(function(){
+                $(this).tooltip({trigger: 'focus', placement: 'bottom'}).tooltip('show');
+            });
+        });
+        function addNewRow() {
+            const table = document.getElementById('subjectsTable').getElementsByTagName('tbody')[0];
+            const newRow = table.insertRow();
+            const currentDate = new Date().toLocaleDateString('en-US');
+            
+            if(currentDate in {{ dates_data|safe }}){
+                alert('Data for this date already exists');
+                return;
+            }
+
+            const dateCell = newRow.insertCell(0);
+            dateCell.innerHTML = '<input class="form-control" type="date" name="date" value="'+ currentDate + '" required>';;
+
+            const subjects = {{ subjects|safe }};
+            for (let i = 0; i < subjects.length; i++) {
+                const bodyMassCell = newRow.insertCell();
+                bodyMassCell.innerHTML = '<input class="form-control" title="Body mass of '+subjects[i] +'" type="text" name="' + subjects[i] + ' body_mass" required>';
+                
+                const weightLiftedCell = newRow.insertCell();
+                weightLiftedCell.innerHTML = '<input class="form-control" title="Weight lifted of '+subjects[i] +'" type="text" name="' + subjects[i] + ' weight_lifted" required>';
+
+            }
+            $('input').focus(function(){
+                $(this).tooltip({trigger: 'focus', placement: 'top'}).tooltip('show');
+            });
+        }
+        
+    </script>
+    <script>
+        console.log({{ subjects|safe }});
+        console.log({{ dates_data|safe }});
+    </script>
+
+    <form method="get" action="{% url 'mice_data' %}">
+        <label for="group">Select Group:</label>
+        <select name="group" id="group">
+            {% for g in groups %}
+                <option value="{{ g }}">{{ g }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-warning m-1">Load Data</button>
+    </form>
+
+    <h2>Group {{ group }}</h2>
+    <form method="post" action="{% url 'mice_data' %}">
+        {% csrf_token %}
+        <input type="hidden" name="group" value="{{ group }}">
+        <div class="container" style="overflow-x: scroll;">
+            <table id="subjectsTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2">Date</th>
+                        {% for subject in subjects %}
+                            <th colspan="2">{{ subject }}</th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        {% for subject in subjects %}
+                            <th>Body Mass</th>
+                            <th>Weight Lifted</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for date, data in dates_data.items %}
+                        <tr>
+                            <td>{{ date }}</td>
+                            {% for subject, subject_data in data.items %}
+                                {% for _, item in subject_data.items %}
+                                    <td>{{ item }}</td>
+                                {% endfor %}
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button type="submit" class="btn btn-success m-1">Submit</button>
+        <button type="button" class="btn btn-primary m-1" onclick="addNewRow()">Add New Row</button>
+    </form>
+    <div id="charts"></div>
+
+    <script type="module">
+        import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+        const data = {{ dates_data|safe }};
+        // Convert the data into a suitable format
+let formattedData = {};
+
+Object.keys(data).forEach(date => {
+    Object.keys(data[date]).forEach(subject => {
+        if (!formattedData[subject]) {
+            formattedData[subject] = [];
+        }
+        formattedData[subject].push({
+            date: date,
+            body_mass: data[date][subject].body_mass ? +data[date][subject].body_mass : null,
+            weight_lifted: data[date][subject].weight_lifted ? +data[date][subject].weight_lifted : null
+        });
+    });
+});
+
+// const margin = {top: 40, right: 60, bottom: 30, left: 60};
+// const width = 500 - margin.left - margin.right;
+// const height = 300 - margin.top - margin.bottom;
+
+// Parse the date / time
+// const parseDate = d3.timeParse("%m/%d/%y");
+const parseAltDate = d3.timeParse("%Y-%m-%d");
+
+// Prepare scales
+const x = d3.scaleTime().range([0, width]);
+const y0 = d3.scaleLinear().range([height, 0]);
+const y1 = d3.scaleLinear().range([height, 0]);
+
+// Line generators
+const lineBodyMass = d3.line()
+    .defined(d => d.body_mass !== null)
+    .x(d => x(d.date))
+    .y(d => y0(d.body_mass));
+
+const lineWeightLifted = d3.line()
+    .defined(d => d.weight_lifted !== null)
+    .x(d => x(d.date))
+    .y(d => y1(d.weight_lifted));
+
+
+    var margin = {top: 10, right: 30, bottom: 30, left: 60},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+
+
+// Function to create a chart for a subject
+function createChart(data, subject) {
+    
+    var svg = d3.select("#charts")
+    .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+        .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+
+    // Parse the dates
+    data.forEach(d => {
+        d.date = parseAltDate(d.date);
+    });
+
+    // Log parsed data for debugging
+    console.log(`Parsed data for ${subject}:`, data);
+
+
+    // Filter out data points with null dates or invalid values
+    data = data.filter(d => d.date !== null && (d.body_mass !== null || d.weight_lifted !== null));
+
+    // Log filtered data for debugging
+    console.log(`Filtered data for ${subject}:`, data);
+
+
+    var x = d3.scaleTime()
+      .domain(d3.extent(data, function(d) { return d.date; }))
+      .range([ 0, width ]);
+    svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x));
+
+    // Add Y axis
+    var y = d3.scaleLinear()
+      .domain([0, d3.max(data, function(d) { return +d.body_mass; })])
+      .range([ height, 0 ]);
+    svg.append("g")
+      .call(d3.axisLeft(y));
+
+    // Add the line
+    svg.append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", "steelblue")
+      .attr("stroke-width", 1.5)
+      .attr("d", d3.line()
+        .x(function(d) { return x(d.date) })
+        .y(function(d) { return y(d.body_mass) })
+        );
+ 
+    svg.append("text")
+        .attr("x", (width / 2))
+        .attr("y", 10)
+        .attr("text-anchor", "middle")
+        .style("font-size", "16px")
+        .style("text-decoration", "underline")
+        .text(`Subject: ${subject}`);
+    
+    svg.append("text")
+        .attr("x", width - 50)
+        .attr("y", 30)
+        .style("fill", "blue")
+        .text(`Body mass`);
+
+    svg.append("text")
+        .attr("x", width - 50)
+        .attr("y", 50)
+        .style("fill", "red")
+        .text(`Weight lifted`);
+}
+
+
+
+//     // Set the domains
+//     x.domain(d3.extent(data, d => d.date));
+//     y0.domain([0, d3.max(data, d => d.body_mass)]);
+//     y1.domain([0, d3.max(data, d => d.weight_lifted)]);
+
+//     const svg = d3.select("#charts").append("svg")
+//         .attr("class", "chart")
+//         .attr("width", width + margin.left + margin.right)
+//         .attr("height", height + margin.top + margin.bottom)
+//         .append("g")
+//         .attr("transform", `translate(${margin.left},${margin.top})`);
+
+//     // Add header
+    // svg.append("text")
+    //     .attr("x", (width / 2))
+    //     .attr("y", -10)
+    //     .attr("text-anchor", "middle")
+    //     .style("font-size", "16px")
+    //     .style("text-decoration", "underline")
+    //     .text(`Subject: ${subject}`);
+
+//     // Add the X Axis
+//     svg.append("g")
+//         .attr("transform", `translate(0,${height})`)
+//         .call(d3.axisBottom(x));
+
+//     // Add the Y0 Axis
+//     svg.append("g")
+//         .call(d3.axisLeft(y0));
+
+//     // Add the Y1 Axis
+//     svg.append("g")
+//         .attr("transform", `translate(${width},0)`)
+//         .call(d3.axisRight(y1));
+
+//     // Add the line for body_mass
+//     svg.append("path")
+//         .data([data])
+//         // .attr("class", "line")
+//         .style("stroke", "blue")
+//         .attr("d", lineBodyMass);
+
+//     // Add the line for weight_lifted
+//     svg.append("path")
+//         .data([data])
+//         .attr("class", "line")
+//         .style("stroke", "red")
+//         .attr("d", lineWeightLifted);
+
+//     // Add legend
+//     svg.append("text")
+//         .attr("x", width - 50)
+//         .attr("y", 30)
+//         .style("fill", "blue")
+//         .text(`Body mass`);
+
+//     svg.append("text")
+//         .attr("x", width - 50)
+//         .attr("y", 50)
+//         .style("fill", "red")
+//         .text(`Weight lifted`);
+// }
+
+// Create a chart for each subject
+Object.keys(formattedData).forEach(subject => {
+    createChart(formattedData[subject], subject);
+});
+
+    </script>
+{% endblock %}

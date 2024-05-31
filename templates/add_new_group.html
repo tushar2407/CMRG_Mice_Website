@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load filters %}
+{% block content %}
+<div id="new-group-section">
+    <h2>Create New Mice Group</h2>
+    <form id="new-group-form" method="POST" action="{% url 'create_group' %}">
+        {% csrf_token %}
+        <label for="group-name">Group Name:</label>
+        <input class="form-control" type="text" id="group-name" name="group" required>
+        
+        <label for="start-date">Start Date:</label>
+        <input class="form-control" type="date"  id="start-date" name="start_date" required>
+        
+        <h3>Mice</h3>
+        <div id="mice-names">
+            <div class="mouse-entry">
+                <label for="mouse-name-1">Mouse 1:</label>
+                <input class="form-control" type="text" id="mouse-name-1" name="mouse_names" required>
+            </div>
+        </div>
+        <button type="button" id="add-mouse" class="btn btn-success">Add Mouse</button>
+        <button type="submit" class="btn btn-primary">Create Group</button>
+    </form>
+</div>
+
+<script>
+    document.getElementById('add-mouse').addEventListener('click', function() {
+        const miceNamesDiv = document.getElementById('mice-names');
+        const mouseCount = miceNamesDiv.getElementsByClassName('mouse-entry').length + 1;
+        const newMouseEntry = document.createElement('div');
+        newMouseEntry.className = 'mouse-entry';
+        newMouseEntry.innerHTML = `
+            <label for="mouse-name-${mouseCount}">Mouse ${mouseCount}:</label>
+            <input class="form-control" type="text" id="mouse-name-${mouseCount}" name="mouse_names" required>
+        `;
+        miceNamesDiv.appendChild(newMouseEntry);
+    });
+
+    document.getElementById('new-group-form').addEventListener('submit', function(event) {
+        const mouseNameInputs = document.querySelectorAll('[name="mouse_names"]');
+        mouseNameInputs.forEach((input, index) => {
+            input.name = `mouse_names[${index}]`;
+        });
+    });
+    
+</script>
+{% endblock %}
