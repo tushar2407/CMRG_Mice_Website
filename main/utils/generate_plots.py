@@ -22,9 +22,12 @@ from main.utils.base import group_to_sheet, group_to_mice, book, group_to_contro
 warnings.filterwarnings("ignore")
 
 path_to_files = [
-    r"/home/ubuntu/Group_6_3_19_2024",
-    r"/home/ubuntu/Group_6",
-    r"/home/ubuntu/Group6_7"
+    # r"/home/ubuntu/Group_6_3_19_2024",
+    # r"/home/ubuntu/Group_6",
+    # r"/home/ubuntu/Group6_7"
+    r"/Users/tush/Grad School/CMRG Lab/Group_6",
+    r"/Users/tush/Grad School/CMRG Lab/Group6_7",
+    r"/Users/tush/Grad School/CMRG Lab/Group_9",
     # r"/Users/tush/Library/CloudStorage/GoogleDrive-tushar.mohan2001@gmail.com/Other computers/My Laptop (1)/Group_6",
     # r"/Users/tush/Library/CloudStorage/GoogleDrive-tushar.mohan2001@gmail.com/Other computers/My Laptop (1)/Group6_7"
 ]
@@ -73,16 +76,6 @@ def extract_mouse_data_cleaned(df, mouse_id):
     # input()
     remaining_pellets_data = dict(zip(mouse_data['Date'], mouse_data['Remaining Pellets']))
 
-    # print("Mouse Mass Data:", mouse_mass_data)
-    # print("Weight Lifted Data:", weight_lifted_data)
-    # print("Remaining Pellets Data:", remaining_pellets_data)
-
-    # print(f"Extracted and cleaned data for {mouse_id}:")
-    # print(f"Final mouse {mouse_id}")
-    # print(mouse_mass_data)
-    # print(weight_lifted_data)
-    # print(remaining_pellets_data)
-
     return mouse_mass_data, weight_lifted_data, remaining_pellets_data
 
 
@@ -129,7 +122,7 @@ def extract_data_for_file(file_keyword, path_to_files, start_date):
                         # print(end_date_match)
                         date_str = end_date_match.group(1)
                         date = datetime.strptime(date_str, '%m/%d/%y')
-                        print(file_keyword, date)
+                        # print(file_keyword, date)
                         if date <= start_date - timedelta(1):
                             continue
 
@@ -153,12 +146,6 @@ def extract_data_for_file(file_keyword, path_to_files, start_date):
 
     print(f"Extracted day lift data for {file_keyword}:")
     print(day_lift_data)
-    # print(f"Extracted night lift data for {file_keyword}:")
-    # print(night_lift_data)
-    # print(f"Extracted day reward data for {file_keyword}:")
-    # print(day_reward_data)
-    # print(f"Extracted night reward data for {file_keyword}:")
-    # print(night_reward_data)
 
     return day_lift_data, night_lift_data, day_reward_data, night_reward_data
 
@@ -394,6 +381,8 @@ def generate_plots(Specimen_No, sheet_name, group, start_date_str='2023-11-27'):
     for mouse_id in Specimen_No:
         # Now unpacking three values
         mouse_mass_data, weight_lifted_data_temp, pellets_data = extract_mouse_data_cleaned(df, mouse_id)
+        
+        # print(mouse_mass_data.values())
 
         if weight_lifted_data == {}:
             weight_lifted_data = weight_lifted_data_temp
@@ -416,9 +405,9 @@ def generate_plots(Specimen_No, sheet_name, group, start_date_str='2023-11-27'):
         print("pdf created")
         for i in range(0, len(Specimen_No), 4):
             specimens = Specimen_No[i:i + 4]
-            print(specimens)
+            # print(specimens)
             for i, keyword in enumerate(specimens):
-                print(keyword)
+                # print(keyword)
                 if i % 4 == 0:
                     fig, axs = plt.subplots(4, 2, figsize=(20, 15))
                     print("Here")
@@ -431,11 +420,15 @@ def generate_plots(Specimen_No, sheet_name, group, start_date_str='2023-11-27'):
 
                 # Extracting mouse data for the current mouse ID
                 mouse_data = mouse_data_dict[keyword]
-                print(mouse_data)
+                # print(mouse_data)
                 mouse_mass_data, weight_lifted_data = parse_mouse_data(mouse_data)
 
-                updated_plot_and_display(df, keyword, max_y_limit, ax1, ax2, path_to_files, start_date, specimens, mouse_mass_data, weight_lifted_data, remaining_pellets_data)
+                try: 
+                    updated_plot_and_display(df, keyword, max_y_limit, ax1, ax2, path_to_files, start_date, specimens, mouse_mass_data, weight_lifted_data, remaining_pellets_data)
 
+                except Exception as e:
+                    print(f"Error plotting for {keyword}: {str(e)}")
+                
                 plt.subplots_adjust(hspace=0.6, wspace=0.3)
                 # Add the following lines to increase the xtick label font size
                 ax1.tick_params(axis='x', labelsize=9)
